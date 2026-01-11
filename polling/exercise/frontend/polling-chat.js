@@ -17,11 +17,28 @@ chat.addEventListener("submit", function (e) {
 async function postNewMsg(user, text) {
   // post to /poll a new message
   // write code here
+  const response = await fetch('/poll', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ user, text })
+  })
 }
 
 async function getNewMsgs() {
   // poll the server
   // write code here
+  console.log('Calling get new message');
+  const response = await fetch('/poll');
+  const data = await response.json();
+
+  console.log('data from the server', data);
+  allChat = data;
+  render();
+  // setTimeout(() => {
+  //   getNewMsgs()
+  // }, INTERVAL)
 }
 
 function render() {
@@ -39,3 +56,15 @@ const template = (user, msg) =>
 
 // make the first request
 getNewMsgs();
+
+let timeToMakeNextRequest = 0;
+async function rafTimer(time) {
+  if (timeToMakeNextRequest <= time) {
+    await getNewMsgs();
+    timeToMakeNextRequest = Date.now() + INTERVAL;
+    // document.timeline.currentTime or performance.now() This can be done instead of Date.now()
+  }
+  window.requestAnimationFrame(rafTimer);
+}
+
+requestAnimationFrame(rafTimer);
