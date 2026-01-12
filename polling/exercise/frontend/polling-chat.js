@@ -5,6 +5,8 @@ const msgs = document.getElementById("msgs");
 let allChat = [];
 
 // the interval to poll at in milliseconds
+const BACKOFF = 5000;
+let failedTries
 const INTERVAL = 3000;
 
 // a submit listener on the form in the HTML
@@ -29,16 +31,21 @@ async function postNewMsg(user, text) {
 async function getNewMsgs() {
   // poll the server
   // write code here
-  console.log('Calling get new message');
-  const response = await fetch('/poll');
-  const data = await response.json();
+  let json;
+  try {
+    const response = await fetch('/poll');
+    json = await response.json();
 
-  console.log('data from the server', data);
-  allChat = data;
-  render();
-  // setTimeout(() => {
-  //   getNewMsgs()
-  // }, INTERVAL)
+    if (response.status >= 400) {
+      throw new Error('Request did not succeed', response.status);
+    }
+    allChat = json;
+    render();
+    failedTries = 0;
+  } catch (error) {
+    console.log('Polling error', error);
+    failedTries++;
+  }
 }
 
 function render() {
@@ -61,7 +68,7 @@ let timeToMakeNextRequest = 0;
 async function rafTimer(time) {
   if (timeToMakeNextRequest <= time) {
     await getNewMsgs();
-    timeToMakeNextRequest = Date.now() + INTERVAL;
+    timeToMakeNextRequest = time + INTERVAL + failedTries * BACKOFF;
     // document.timeline.currentTime or performance.now() This can be done instead of Date.now()
   }
   window.requestAnimationFrame(rafTimer);
