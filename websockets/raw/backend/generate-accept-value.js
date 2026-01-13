@@ -11,3 +11,6 @@ function generateAcceptValue(acceptKey) {
 }
 
 export default generateAcceptValue;
+/* 
+Here this function is part of the websocket opening handshake process
+*/

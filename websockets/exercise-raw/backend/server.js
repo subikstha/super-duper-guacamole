@@ -30,6 +30,58 @@ const server = http.createServer((request, response) => {
  *
  */
 
+server.on("upgrade", (request, socket) => {
+  if (request.headers["upgrade"] !== "websocket") {
+    socket.end("HTTP/1.1 400 Bad Request\r\n\r\n")
+    return;
+  }
+
+  const acceptKey = request.headers["sec-websocket-key"];
+  const acceptValue = generateAcceptValue(acceptKey);
+
+  const headers = [
+    'HTTP/1.1 101 Web Socket Protocol Handshake',
+    'Upgrade: websocket',
+    'Connection: Upgrade',
+    `Sec-Websocket-Accept: ${acceptValue}`,
+    'Sec-WebSocket-Protocol: json',
+    "\r\n" // Add white space to say this is the end of the headers and everything after this is data
+  ]
+
+  socket.write(headers.join("\r\n"));
+  socket.write(objToResponse({
+    msg: getMsgs()
+  }))
+
+  connections.push(socket)
+
+  // Receive information from the client
+  socket.on("data", (buffer) => {
+    const message = parseMessage(buffer)
+    console.log(message)
+    if (message) {
+      msg.push({
+        user: message.user,
+        text: message.text,
+        time: Date.now()
+      })
+
+      connections.forEach((sock) => {
+        sock.write(objToResponse({
+          msg: getMsgs()
+        }))
+      })
+    } else if (message === null) {
+      socket.end()
+    }
+
+
+    socket.end(() => {
+      connections = connections.filter((conn) => conn !== socket)
+    })
+  })
+})
+
 const port = process.env.PORT || 8080;
 server.listen(port, () =>
   console.log(`Server running at http://localhost:${port}`)

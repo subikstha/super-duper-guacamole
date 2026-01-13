@@ -1,4 +1,5 @@
 function parseMessage(buffer) {
+  // This function takes in a buffer and transforms it into text
   const firstByte = buffer.readUInt8(0);
   const opCode = firstByte & 0xf;
 
